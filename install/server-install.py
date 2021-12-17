@@ -1,6 +1,16 @@
 import sys 
 import shutil
 import os
+import yaml
+
+# for templates
+from jinja2 import Environment, FileSystemLoader
+template_dir, template_file = os.path.split(sys.argv[1])
+vars_file = sys.argv[2]
+env = Environment(loader=FileSystemLoader('./'))
+env.trim_blocks = True
+env.lstrip_blocks = True
+env.rstrip_blocks = True
 
 loader = FileSystemLoader('/project1/templates', encoding='utf-8')
 # запихал все команды преднастройки системы в один массив, и далее в цикле из выполняю 
@@ -51,8 +61,14 @@ import os
 shellcmd = os.popen(cmd) #
 print(shellcmd.read())
 
-
-#
+# Config krb5.conf.j2
+template = env.get_template('template/krb5.conf.j2')
+with open(vars_file) as f:
+    vars_dict = yaml.safe_load(f)
+output_from_parsed_template = template.render(vars_dict)
+with open("res/krb5.conf", "w") as fh:
+    fh.write(output_from_parsed_template)
+'''
 from jinja2 import Environment, FileSystemLoader
 loader = FileSystemLoader('/projects/jinja2/krb5.conf.j2')
 env = Environment(loader, trim_blocks=True, lstrip_blocks=True)
@@ -61,43 +77,32 @@ data = {'samba_realm':'custom.domain,alt'}
 with open("krb5.conf", "w") as f:
     f.write(template.render(data))
 #config krb5.conf
-shutil.copy(r'krb5.conf.j2', r'/etc/krb5t.conf')
+shutil.copy(r'krb5.conf.j2', r'/etc/krb5.conf')
+'''
 
+# Config kdc.conf
+template = env.get_template('template/kdc.conf.j2')
+with open(vars_file) as f:
+    vars_dict = yaml.safe_load(f)
+output_from_parsed_template = template.render(vars_dict)
+with open("res/kdc.conf", "w") as fh:
+    fh.write(output_from_parsed_template)
 
-#
-from jinja2 import Environment, FileSystemLoader
-loader = FileSystemLoader('/projects/jinja2/kdc.conf.j2')
-env = Environment(loader, trim_blocks=True, lstrip_blocks=True)
-template = env.get_template('skdc.conf.j2')
-data = {'samba_realm':'doamin.alt'}
-with open("kdc.conf.j2", "w") as f:
-    f.write(template.render(data))
-#config kdc.conf
-shutil.copy(r'kdc.conf.j2', r'/usr/local/samba/private/kdc.conf')
+# Config smb.conf
+template = env.get_template('template/smb.conf.j2')
+with open(vars_file) as f:
+    vars_dict = yaml.safe_load(f)
+output_from_parsed_template = template.render(vars_dict)
+with open("res/smb.conf", "w") as fh:
+    fh.write(output_from_parsed_template)
 
-
-#
-from jinja2 import Environment, FileSystemLoader
-loader = FileSystemLoader('/projects/jinja2/smb.conf.master.j2')
-env = Environment(loader, trim_blocks=True, lstrip_blocks=True)
-template = env.get_template('smb.conf.master.j2')
-data = {'dc_short_name':'dc0', 'samba_realm':'doamin.alt', 'samba_domain':'domain', 'samba_dns_forward':'8.8.8.8'}
-with open("smb.conf.master.j2", "w") as f:
-    f.write(template.render(data))
-#config smb.conf
-shutil.copy(r'smb.conf.master.j2', r'/etc/samba/smb.conf.master.j2')
-
-
-#
-from jinja2 import Environment, FileSystemLoader
-loader = FileSystemLoader('/projects/jinja2/options.conf.j2')
-env = Environment(loader, trim_blocks=True, lstrip_blocks=True)
-template = env.get_template('options.conf.j2')
-data = {'samba_network':'10.0.0.0', 'samba_dns_forward':'8.8.8.8'}
-with open("options.conf", "w") as f:
-    f.write(template.render(data))
-#config options.conf
-shutil.copy(r'options.conf.j2', r'/etc/bind/options.conf')
+# Config options.conf
+template = env.get_template('template/options.conf.j2')
+with open(vars_file) as f:
+    vars_dict = yaml.safe_load(f)
+output_from_parsed_template = template.render(vars_dict)
+with open("res/options.conf", "w") as fh:
+    fh.write(output_from_parsed_template)
 
 os.system('samba-tool domain provision --realm=custom.alt --domain custom --adminpass='Pa$$word' --dns-backend=BIND9_DLZ --backend-store=mdb --server-role=dc --use-rfc2307 --host-ip=10.64.66.17')
 
