@@ -1,0 +1,242 @@
+# Взята с https://my.basealt.space/projects/server_solutions_analytics
+
+Обобщённый сценарий развёртывания контроллера домена SambaDC
+
+В документе представлен сценарий с рекомедциями по уствке Samba ... на Альт Сервер 9.2
+актуальная версия samba на момент составления сценария в репозитории p9 4.14.8
+Редактировать эту секцию
+Рекомендуемая конфигурация Samba
+Тип используемого DNS сервера 	BIND9_DLZ 	Для гибкого управления в сложной инфраструктуре
+Тип хранилища 	mdb 	Для длительного времени жизни домена при более 100 тыс. объектов
+Kerberos-сервер 	Heimdal 	Для совместимости на уровне с Windows (S4U2proxy/S4U2user)
+Редактировать эту секцию
+Предупреждения
+
+Netbios-имя узла в Samba не должно быть длиннее 15 символов, поэтому для совместимости имена контроллеров домена стоит укладывать в этот размер.
+Политика для паролей в домене, по умолчанию, требует не менее 8 символов и содержать символы как минимум трёх групп из четырёх возможных:
+
+    латинские буквы в верхнем региcтре;
+    латинские буквы нижнем регистрах;
+    числа;
+    спецсимволы.
+
+Имя домена (рилма в Kerberos) для разворачиваемого КД задаётся в верхнем регистре и должно совпадать с именем DNS-зоны домена в нижнем регистре.
+Редактировать эту секцию
+Предварительная настройка
+Редактировать эту секцию
+Установка дополнительного и удаление конфликтующего ПО
+
+Перед установкой пакетов, требуемых для настройки контроллера домена, следует обновить репозиторий пакетов и операционную систему для использования последних версий, включающих исправления безопасности:
+apt-get update && sudo apt-get dist-upgrade
+
+Для настройки контроллера домена на базе Samba (с библиотекой Heimdal Kerberos) в ОС "Альт" следует установить пакет task-samba-dc, с которым установятся по зависимостям все необходимые пакеты (samba-dc, krb5-kinit, ldb-tools, lmdb-utils):
+apt-get install task-samba-dc
+
+Кроме того, для работы с внешним сервером имён Bind9, следует проверить установку соответствующих пакетов:
+apt-get install bind bind-utils
+
+Стандартные клиентские службы аутентификации и кеширования желательно удалить:
+apt-get remove nss-ldapd nscd
+Редактировать эту секцию
+Остановка и отключение служб
+
+Системные службы, которые конфликтуют с сервером Samba в режиме контроллера домена следует отключить:
+systemctl disable --now smb nmb krb5kdc kadmin kpropd slapd
+
+Перед установкой сервера Samba, также стоит отключить и основные службы:
+systemctl stop samba bind
+Редактировать эту секцию
+Установка системных настроек
+
+Смена имени хоста на полное имя с суфиксом DNS-домена - FQDN (Fully Qualified Domain Name).
+hostnamectl set-hostname dc.domain.alt
+
+Обновление настроек в окружениях "chroot'ed" приложений:
+update_chrooted all
+
+Отключение работы в "chroot'ed" окружении для сервера имён bind:
+control bind-chroot disabled
+
+Отключение использования кеша воспроизведения Kerberos (replay cache) при GSSAPI аутентификации на сервере имён bind (из-за не совместимости). Для этого в файл переменных окружения службы /etc/sysconfig/bind дописывается строка вида:
+
+KRB5RCACHETYPE="none"
+
+Установка клиентских настроек сервера имён (критично для развёртывания реплик - в этом случае сервер имён должен разрешать зону домена, для поиска контроллеров домена в существующем лесе):
+Для etcnet для интерфейса с именем IFACENAME в соответствующем каталоге создаётся файл /etc/net/ifaces/IFACENAME/reoslv.conf формата:
+
+search DOMAIN_ZONE
+nameserver DNS_IP_ADDRESS
+
+systemctl restart systemd-resolved
+Редактировать эту секцию
+Создание домена:
+Редактировать эту секцию
+Настройка Kerberos
+Редактируем файл /etc/krb5.conf
+
+[logging]
+
+[libdefaults]
+ dns_lookup_kdc = true
+ dns_lookup_realm = false
+ ticket_lifetime = 24h
+ renew_lifetime = 7d
+ forwardable = true
+ rdns = false
+ default_realm = CUSTOM.ALT
+
+[realms]
+CUSTOM.ALT = {
+  default_domain = custom.alt
+}
+
+[domain_realm]
+custom.alt = CUSTOM.ALT
+
+Редактировать эту секцию
+Редактируем файл /etc/openldap/ldap.conf
+
+tls_reqcert     never
+sasl_nocanon    yes
+
+Редактировать эту секцию
+Редактируем файл /etc/samba/smb.conf
+
+# Global parameters
+[global]
+        netbios name = SITE-SAMBA-DC7
+        realm = CUSTOM.ALT
+        workgroup = CUSTOM
+        dns forwarder = 8.8.8.8
+        server role = active directory domain controller
+        idmap_ldb:use rfc2307 = yes
+        bind interfaces only = yes
+        interfaces = lo eth0
+        kerberos method = dedicated keytab
+        dedicated keytab file = /etc/krb5.keytab
+
+[netlogon]
+        path = /var/lib/samba/sysvol/custom/scripts
+        read only = No
+
+[sysvol]
+        path = /var/lib/samba/sysvol
+        read only = No
+
+Редактировать эту секцию
+Редактируем файл /etc/bind/named.conf
+
+include "/etc/bind/options.conf";
+include "/etc/bind/rndc.conf";
+include "/etc/bind/local.conf";
+include "/var/lib/samba/bind-dns/named.conf";
+
+Редактировать эту секцию
+Редактируем файл /etc/bind/options.conf
+
+options {
+        version "unknown";
+        directory "/etc/bind/zone";
+        pid-file "";
+        dump-file "/var/run/named_dump.db";
+        statistics-file "/var/run/named.stats";
+        recursing-file "/var/run/recursing";
+
+        tkey-gssapi-keytab "/var/lib/samba/bind-dns/dns.keytab";
+
+        forwarders { 8.8.8.8; };
+        allow-query { localnets; 10.64.64.0/22; };
+        allow-recursion { localnets; 10.64.64.0/22; };
+
+        max-cache-ttl 86400;
+};
+
+logging {
+        category lame-servers {null;};
+};
+
+Редактировать эту секцию
+Очистка конфигурации
+
+При повторной установке, предыдущую конфигурацию, включая файл настройки, требуется удалить:
+rm -rf /var/lib/samba /var/cache/samba /etc/samba/smb.conf
+mkdir /var/lib/samba /var/cache/samba
+Редактировать эту секцию
+Развертывание домена
+
+samba-tool domain provision --realm=custom.alt --domain custom --adminpass='Pa$$word' --dns-backend=BIND9_DLZ --backend-store=mdb --server-role=dc --use-rfc2307 --host-ip=10.64.66.17
+Редактировать эту секцию
+Установка служб по умолчанию и их запуск:
+
+systemctl enable --now samba bind
+Редактировать эту секцию
+Адрес DNS сервера
+
+Конфигурация systemd-resolved
+/etc/systemd/resolved.conf
+[Resolve]
+DNS=127.0.0.1
+Domains=custom.alt
+Редактировать эту секцию
+Инициализация keytab
+
+kinit administrator@CUSTOM.ALT
+Редактировать эту секцию
+Проверка работоспособности на сервере
+Редактировать эту секцию
+Проверка Kerberos
+
+# kinit administrator@CUSTOM.ALT
+# klist
+
+Ticket cache: FILE:/tmp/krb5cc_500
+Default principal: administrator@CUSTOM.ALT
+
+Valid starting       Expires              Service principal
+25.11.2021 20:46:51  26.11.2021 06:46:51  krbtgt/CUSTOM.ALT@CUSTOM.ALT
+    renew until 02.12.2021 20:46:44
+
+Редактировать эту секцию
+Проверка DNS
+
+# host custom.alt
+# host -t SRV _kerberos._udp.custom.alt.
+# host -t SRV _ldap._tcp.custom.alt.
+
+
+custom.alt has address 10.64.66.17
+_kerberos._udp.custom.alt has SRV record 0 100 88 site-samba-dc7.custom.alt.
+_ldap._tcp.custom.alt has SRV record 0 100 389 site-samba-dc7.custom.alt.
+
+Редактировать эту секцию
+Проверка Samba
+
+# samba-tool domain info 10.64.66.17
+
+
+Forest           : custom.alt
+Domain           : custom.alt
+Netbios domain   : CUSTOM
+DC name          : site-samba-dc7.custom.alt
+DC netbios name  : SITE-SAMBA-DC7
+Server site      : Default-First-Site-Name
+Client site      : Default-First-Site-Name
+
+# smbclient -L localhost -U administrator
+
+
+    Sharename       Type      Comment
+    ---------       ----      -------
+    sysvol          Disk      
+    netlogon        Disk      
+    IPC$            IPC       IPC Service (Samba 4.14.8)
+SMB1 disabled -- no workgroup available
+
+Редактировать эту секцию
+Проверка работоспособности на клиенте
+
+Введите клиента в домен согласно инструкции:
+[[Сценарий развёртывания клиента в домене SambaDC]]
+
+В случае проблем убедитесь, что клиен находится находится в разрешённых в DNS сервере локальных сетях.
+Локальные сети для этой конфигурации указаны в начале статьи
