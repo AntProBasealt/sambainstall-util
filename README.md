@@ -1,4 +1,4 @@
 # sambainstall-util
-This uill for install samba whis param.
+This utill for install samba with param.
 
 Main file - server-install.py

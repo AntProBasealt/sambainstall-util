@@ -16,14 +16,14 @@ env.rstrip_blocks = True
 
 
 # запихал все команды преднастройки системы в один массив, и далее в цикле из выполняю 
-prepare_list = ["apt-get update && sudo apt-get dist-upgrade", "apt-get install task-samba-dc krb5-kinit bind", "apt-get remove nss-ldapd nscd", "systemctl disable --now smb nmb krb5kdc kadmin kpropd slapd", "systemctl stop samba bind"]
+prepare_list = ['apt-get update && sudo apt-get dist-upgrade', 'apt-get install task-samba-dc krb5-kinit bind', 'apt-get remove nss-ldapd nscd', 'systemctl disable --now smb nmb krb5kdc kadmin kpropd slapd', 'systemctl stop samba bind']
 	for i in prepare_list:
 		cmd + i
 shellcmd = os.popen(cmd) #
 print(shellcmd.read())
 
 # можно объединить в один блок
-prepare_list = ["hostnamectl set-hostname %name_dc + '.custom.alt'", "update_chrooted all", "control bind-chroot disabled"]
+prepare_list = ['hostnamectl set-hostname %name_dc + '.custom.alt'', 'update_chrooted all', 'control bind-chroot disabled']
 import os
 	for i in prepare_list:
 		cmd + i
@@ -31,7 +31,7 @@ shellcmd = os.popen(cmd) #
 print(shellcmd.read())
 
 # можно объединить в один блок
-prepare_list = ["rm -rf /var/lib/samba /etc/samba/smb.conf", "mkdir /var/lib/samba", "systemctl restart systemd-resolved", "mkdir -p /usr/local/samba/private"]
+prepare_list = ['rm -rf /var/lib/samba /etc/samba/smb.conf', 'mkdir /var/lib/samba', 'systemctl restart systemd-resolved', 'mkdir -p /usr/local/samba/private']
 import os
 	for i in prepare_list:
 		cmd + i
@@ -39,8 +39,8 @@ shellcmd = os.popen(cmd) #
 print(shellcmd.read())
 
 # можно объединить в один блок
-with open("/etc/bind/named.conf", "w") as file:
-    file.write("include "/etc/bind/options.conf";\n include "/etc/bind/rndc.conf";\n include "/etc/bind/local.conf"; include "/var/lib/samba/bind-dns/named.conf";")
+with open('/etc/bind/named.conf', 'w') as file:
+    file.write('include /'/etc/bind/options.conf/';\n include /'/etc/bind/rndc.conf/';\n include /'/etc/bind/local.conf/'; include /'/var/lib/samba/bind-dns/named.conf/';')
 
 '''
 # а это макароны, которые заменил ниже
@@ -79,11 +79,11 @@ class file_config ()
 	def configure(self, templ_name, out_file):
 		for i in self.templ_name():
 			for j in self.out_file():
-				template = env.get_template("template/%s" % i)
+				template = env.get_template('template/%s' % i)
 				with open(vars_file) as f:
     				vars_dict = yaml.safe_load(f)
 					output_from_parsed_template = template.render(vars_dict)
-				with open("res/%s" % j, "w") as fh:
+				with open('res/%s' % j, 'w') as fh:
     				fh.write(output_from_parsed_template)
 -------------------------------------------------------------------
 '''
@@ -121,14 +121,14 @@ with open("res/krb5.conf", "w") as fh:
 # здесь заменяю макароны сверху на опциии утилиты
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--realm', type=str, help="realm")
-parser.add_argument('--domain', type=str, help="domain")
-parser.add_argument('--adminpass', type=str, help="At least 8 characters")
-parser.add_argument('--dns-backend', type=str, help="BIND9_DLZ or INTERNAL", default="BIND9_DLZ")
-parser.add_argument('--backend-store', type=str, help="lndb/mdb", default="mdb")
-parser.add_argument('--server-role', type=str, help="dc", default="dc")
-parser.add_argument('--host-ip', type=str, help="ip-address")
-parser.add_argument('-v', '--verbosity', action="count", default=0)
+parser.add_argument('--realm', type=str, help='realm')
+parser.add_argument('--domain', type=str, help='domain')
+parser.add_argument('--adminpass', type=str, help='At least 8 characters')
+parser.add_argument('--dns-backend', type=str, help='BIND9_DLZ or INTERNAL', default='BIND9_DLZ')
+parser.add_argument('--backend-store', type=str, help='lndb/mdb', default='mdb')
+parser.add_argument('--server-role', type=str, help='dc', default='dc')
+parser.add_argument('--host-ip', type=str, help='ip-address')
+parser.add_argument('-v', '--verbosity', action='count', default=0)
 args = parser.parse_args()
 
 ---------------------------------------------------------
