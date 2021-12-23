@@ -3,43 +3,47 @@ import shutil
 import os
 import yaml
 import argparse
-import time
+
 
 
 # for templates
 from jinja2 import Environment, FileSystemLoader
-template_dir, template_file = os.path.split(sys.argv[1])
-vars_file = sys.argv[2]
+#template_dir, template_file = os.path.split(sys.argv[1])
+#vars_file = sys.argv[2]
 env = Environment(loader=FileSystemLoader('./'))
 env.trim_blocks = True
 env.lstrip_blocks = True
 env.rstrip_blocks = True
 
 
+
 # запихал все команды преднастройки системы в один массив, и далее в цикле из выполняю 
+# можно объединить в один блок, пока не придумал как
 prepare_list = ['apt-get update && sudo apt-get dist-upgrade', 'apt-get install task-samba-dc krb5-kinit bind', 'apt-get remove nss-ldapd nscd', 'systemctl disable --now smb nmb krb5kdc kadmin kpropd slapd', 'systemctl stop samba bind']
-	for i in prepare_list:
-	shellcmd = os.popen(cmd) #
+for i in prepare_list:
+	shellcmd = os.popen(i)	
 #print(shellcmd.read())
 #sys.stdout.flush()
 
 # можно объединить в один блок
 prepare_list = ['hostnamectl set-hostname %name_dc + '.custom.alt'', 'update_chrooted all', 'control bind-chroot disabled']
-	for i in prepare_list:
-	shellcmd = os.popen(cmd) #
+for i in prepare_list:
+	shellcmd = os.popen(i)	
 #print(shellcmd.read())
 #sys.stdout.flush()
 
 # можно объединить в один блок
 prepare_list = ['rm -rf /var/lib/samba /etc/samba/smb.conf', 'mkdir /var/lib/samba', 'systemctl restart systemd-resolved', 'mkdir -p /usr/local/samba/private']
-	for i in prepare_list:
-	shellcmd = os.popen(cmd) 
+for i in prepare_list:
+	shellcmd = os.popen(i)	
 #print(shellcmd.read())
 #sys.stdout.flush()
 
 # можно объединить в один блок
-with open('/etc/bind/named.conf', 'w') as file:
-    file.write('include /'/etc/bind/options.conf/';\n include /'/etc/bind/rndc.conf/';\n include /'/etc/bind/local.conf/'; include /'/var/lib/samba/bind-dns/named.conf/';')
+# Config (replace -  /etc/bind/named.conf)
+with open('named.conf', 'w') as file:
+    file.write('include \'/etc/bind/options.conf\';\n include \'/etc/bind/rndc.conf\';\n include \'/etc/bind/local.conf\'; include \'/var/lib/samba/bind-dns/named.conf\';')
+
 
 '''
 # а это макароны, которые заменил ниже
@@ -67,22 +71,27 @@ output_from_parsed_template = template.render(vars_dict)
 with open("res/options.conf", "w") as fh:
     fh.write(output_from_parsed_template)
 
+# Config krb5.conf.j2
+template = env.get_template('template/krb5.conf.j2')
+with open(vars_file) as f:
+    vars_dict = yaml.safe_load(f)
+output_from_parsed_template = template.render(vars_dict)
+with open("res/krb5.conf", "w") as fh:                            
+    fh.write(output_from_parsed_template)  
 '''
-# Здесь генерит конфиги (те что всерху)
-class file_config ()
+# Здесь генерит конфиги (те что сверху)
+templ_name = ('kdc.conf.j2', 'krb5.conf.j2', 'smb.conf.j2', 'options.conf.j2')
+out_file = ('kdc.conf', 'krb5.conf', 'smb.conf', 'options.conf')
 	
-	templ_name = ('kdc.conf.j2', 'krb5.conf.j2', 'smb.conf.j2', 'options.conf.j2')
-	out_file = ('kdc.conf', 'krb5.conf', 'smb.conf', 'options.conf')
-	
-	for i in self.templ_name():
-		for j in self.out_file():
-			template = env.get_template('template/%s' % i)
-			with open(vars_file) as f:
-    			vars_dict = yaml.safe_load(f)
-				output_from_parsed_template = template.render(vars_dict)
-			with open('res/%s' % j, 'w') as fh:
-    			fh.write(output_from_parsed_template)
--------------------------------------------------------------------
+for i in templ_name():
+	for j in out_file():
+		template = env.get_template('templ/%s' % i)
+		with open('varfile.yml') as f:
+   			vars_dict = yaml.safe_load(f)
+			output_from_parsed_template = template.render(vars_dict)
+		with open('res/%s' % j, 'w') as fh:
+   			fh.write(output_from_parsed_template)
+
 '''
 # это тож макароны, заменил ниже потом                                                                
 print("Please enter ip_dns: ")                                    
@@ -91,32 +100,19 @@ ip_dns = sys.stdin.readline()
 #ip_dns = getattr(ureg, user_value)
 with open("/etc/systemd/resolved.conf", "w") as f:
 		f.write("DNS=%s" % ip_dns)
-
-#
 print("Please enter name_domain: ")
 name_domain = sys.stdin.readline() 
 with open("/etc/systemd/resolved.conf", "w") as f:
 		f.write("Domains=%s" % name_domain)
 with open("/etc/hosts", "w") as f:
 		f.write( ip_dns + "localhost.localdomain localhost")
-
 print("Please enter name_dc: ")
 name_dc = sys.stdin.readline() 
 with open("/etc/systemd/resolved.conf", "w") as f:
 		f.write("Domains=%s" % name_domain)
-
-# Config krb5.conf.j2
-template = env.get_template('template/krb5.conf.j2')
-with open(vars_file) as f:
-    vars_dict = yaml.safe_load(f)
-output_from_parsed_template = template.render(vars_dict)
-with open("res/krb5.conf", "w") as fh:                            
-    fh.write(output_from_parsed_template)    
 '''                     
--------------------------------------------------------------------
 
 # здесь заменяю макароны сверху на опциии утилиты
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--realm', type=str, help='realm')
 parser.add_argument('--domain', type=str, help='domain')
@@ -128,8 +124,7 @@ parser.add_argument('--host-ip', type=str, help='ip-address')
 parser.add_argument('-v', '--verbosity', action='count', default=0)
 args = parser.parse_args()
 
----------------------------------------------------------
-
+'''
 os.system('samba-tool domain provision --realm=custom.alt --domain custom --adminpass='Pa$$word' --dns-backend=BIND9_DLZ --backend-store=mdb --server-role=dc --use-rfc2307 --host-ip=10.64.66.17')
-
+'''
 
