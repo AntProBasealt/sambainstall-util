@@ -3,6 +3,7 @@ import shutil
 import os
 import yaml
 import argparse
+import time
 
 
 # for templates
@@ -18,25 +19,23 @@ env.rstrip_blocks = True
 # запихал все команды преднастройки системы в один массив, и далее в цикле из выполняю 
 prepare_list = ['apt-get update && sudo apt-get dist-upgrade', 'apt-get install task-samba-dc krb5-kinit bind', 'apt-get remove nss-ldapd nscd', 'systemctl disable --now smb nmb krb5kdc kadmin kpropd slapd', 'systemctl stop samba bind']
 	for i in prepare_list:
-		cmd + i
-shellcmd = os.popen(cmd) #
-print(shellcmd.read())
+	shellcmd = os.popen(cmd) #
+#print(shellcmd.read())
+#sys.stdout.flush()
 
 # можно объединить в один блок
 prepare_list = ['hostnamectl set-hostname %name_dc + '.custom.alt'', 'update_chrooted all', 'control bind-chroot disabled']
-import os
 	for i in prepare_list:
-		cmd + i
-shellcmd = os.popen(cmd) #
-print(shellcmd.read())
+	shellcmd = os.popen(cmd) #
+#print(shellcmd.read())
+#sys.stdout.flush()
 
 # можно объединить в один блок
 prepare_list = ['rm -rf /var/lib/samba /etc/samba/smb.conf', 'mkdir /var/lib/samba', 'systemctl restart systemd-resolved', 'mkdir -p /usr/local/samba/private']
-import os
 	for i in prepare_list:
-		cmd + i
-shellcmd = os.popen(cmd) #
-print(shellcmd.read())
+	shellcmd = os.popen(cmd) 
+#print(shellcmd.read())
+#sys.stdout.flush()
 
 # можно объединить в один блок
 with open('/etc/bind/named.conf', 'w') as file:
@@ -72,8 +71,8 @@ with open("res/options.conf", "w") as fh:
 # Здесь генерит конфиги (те что всерху)
 class file_config ()
 	
-	templ_name = ('kdc.conf.j2', 'smb.conf.j2', 'options.conf.j2')
-	out_file = ('kdc.conf', 'smb.conf', 'options.conf')
+	templ_name = ('kdc.conf.j2', 'krb5.conf.j2', 'smb.conf.j2', 'options.conf.j2')
+	out_file = ('kdc.conf', 'krb5.conf', 'smb.conf', 'options.conf')
 	
 	for i in self.templ_name():
 		for j in self.out_file():
