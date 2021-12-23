@@ -72,19 +72,17 @@ with open("res/options.conf", "w") as fh:
 # Здесь генерит конфиги (те что всерху)
 class file_config ()
 	
-	def __init__(self):
-		self.templ_name = ('kdc.conf.j2', 'smb.conf.j2', 'options.conf.j2')
-		self.out_file = ('kdc.conf', 'smb.conf', 'options.conf')
+	templ_name = ('kdc.conf.j2', 'smb.conf.j2', 'options.conf.j2')
+	out_file = ('kdc.conf', 'smb.conf', 'options.conf')
 	
-	def configure(self, templ_name, out_file):
-		for i in self.templ_name():
-			for j in self.out_file():
-				template = env.get_template('template/%s' % i)
-				with open(vars_file) as f:
-    				vars_dict = yaml.safe_load(f)
-					output_from_parsed_template = template.render(vars_dict)
-				with open('res/%s' % j, 'w') as fh:
-    				fh.write(output_from_parsed_template)
+	for i in self.templ_name():
+		for j in self.out_file():
+			template = env.get_template('template/%s' % i)
+			with open(vars_file) as f:
+    			vars_dict = yaml.safe_load(f)
+				output_from_parsed_template = template.render(vars_dict)
+			with open('res/%s' % j, 'w') as fh:
+    			fh.write(output_from_parsed_template)
 -------------------------------------------------------------------
 '''
 # это тож макароны, заменил ниже потом                                                                
