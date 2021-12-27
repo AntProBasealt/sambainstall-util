@@ -1,0 +1,12 @@
+#! /bin/sh
+set -euo pipefail
+
+domainname=${1:-DOMAIN.ALT}
+
+main() {
+	hostnamesct set-hostname $1
+	control bind-chroot disabled
+}
+
+main $domainname
+
