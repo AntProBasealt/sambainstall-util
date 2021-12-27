@@ -7,7 +7,6 @@ def run_command_list(cmdlist):
     for cmd in cmdlist:
         os.popen(cmd)
 
-
 def prep_update(prepare_list):
 	#prepare_list = ['apt-get update && sudo apt-get dist-upgrade', 'apt-get install task-samba-dc krb5-kinit bind', 'apt-get remove nss-ldapd nscd', 'systemctl disable --now smb nmb krb5kdc kadmin kpropd slapd', 'systemctl stop samba bind']
 	#run_command_list(prepare_list)
