@@ -18,3 +18,4 @@ def options():
 	parser.add_argument('--host-ip', type=str, help='ip-address')
 	parser.add_argument('-v', '--verbosity', action='count', default=0)
 	args = parser.parse_args()
+	return parser

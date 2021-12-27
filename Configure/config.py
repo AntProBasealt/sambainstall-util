@@ -1,5 +1,3 @@
-#! /usr/bin/env python3
-
 import sys 
 import shutil
 import os
@@ -14,8 +12,6 @@ env = Environment(loader=FileSystemLoader('./'))
 env.trim_blocks = True
 env.lstrip_blocks = True
 env.rstrip_blocks = True
-
-
 
 # можно объединить в один блок
 # Config (replace -  /etc/bind/named.conf)
@@ -33,7 +29,6 @@ def conf_template():
 # Здесь генерит конфиги 
 	templ_name = ('kdc.conf.j2', 'krb5.conf.j2', 'smb.conf.j2', 'options.conf.j2')
 	out_file = ('kdc.conf', 'krb5.conf', 'smb.conf', 'options.conf')
-	
 	for i in templ_name():
 		for j in out_file():
 			template = env.get_template('templ/%s' % i)
