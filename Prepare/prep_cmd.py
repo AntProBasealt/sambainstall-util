@@ -11,21 +11,25 @@ def prep_update(prepare_list):
 #print(shellcmd.read())
 #sys.stdout.flush()
 
-# можно объединить в один блок
+# обдумываю как подставить домен при установке
 def set_hostname(prepare_list):
-	prepare_list = ['hostnamectl set-hostname %name_dc + '.custom.alt'', 'update_chrooted all', 'control bind-chroot disabled']
+	prepare_list = ['hostnamectl set-hostname %name_dc + '.custom.alt'', 'control bind-chroot disabled']
 	for i in prepare_list:
 		shellcmd = os.popen(i)	
-________________________________________________________
+# или так
+	d = {'var1'="%name_dc + '.custom.alt", 'var2'="disabled", 'var3'="all"}
+	s = "hostnamectl set-hostname {var1}, control bind-chroot {var2}, update_chrooted {var3}"
+		shellcmd = os.popen(i)	
+
+
 #
 def prep_dir(prepare_list):
     prepare_list = ['rm -rf /var/lib/samba /etc/samba/smb.conf', 'mkdir /var/lib/samba', 'systemctl restart systemd-resolved', 'mkdir -p /usr/local/samba/private']
 	for i in prepare_list:
 		shellcmd = os.popen(i)	    
 	#run_commands(cmdlist)
-
 # или так
-d = { 'var1': "/var/lib/samba /etc/samba/smb.conf", 'var2': "/var/lib/samba", 'var3': "systemd-resolved", 'var4': "/usr/local/samba/private" }
-s = "rm -rf {var1}, mkdir {var2}, systemctl restart {var3}, mkdir -p {var4}"
-	shellcmd = os.popen(s.format(**d))
-_________________________________________________________-
+	d = { 'var1': "/var/lib/samba /etc/samba/smb.conf", 'var2': "/var/lib/samba", 'var3': "systemd-resolved", 'var4': "/usr/local/samba/private" }
+	s = "rm -rf {var1}, mkdir {var2}, systemctl restart {var3}, mkdir -p {var4}"
+		shellcmd = os.popen(s.format(**d))
+

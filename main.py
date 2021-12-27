@@ -8,14 +8,14 @@ import os
 
 from Options import options_conf
 from Configure import config
-from Prep_command import prep_cmd
+from Prepare import prep_cmd
 
 	if __name__ == "__main__"
 		
-		def prepare():
-			prep_cmd.rprep_update()
+		def predv():
+			prep_cmd.prep_update()
 			prep_cmd.set_hostname()
-			prep_cmd.rprep_dir()
+			prep_cmd.prep_dir()
 
 		def configure():
 			config.conf_template
